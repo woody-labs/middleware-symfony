@@ -1,0 +1,26 @@
+{
+    "name": "woody/middleware-symfony",
+    "description": "",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sebastien Malot",
+            "email": "sebastien@malot.fr"
+        }
+    ],
+    "require": {
+        "php": "^7.1",
+        "woody/http-server-middleware": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Woody\\Middleware\\Symfony\\": "src"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    }
+}
