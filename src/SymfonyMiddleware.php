@@ -5,9 +5,9 @@ namespace Woody\Middleware\Symfony;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Woody\Http\Server\Middleware\MiddlewareInterface;
 
 /**
  * Class SymfonyMiddleware
@@ -38,6 +38,16 @@ class SymfonyMiddleware implements MiddlewareInterface
         }
 
         $this->kernelGenerator = $kernelGenerator;
+    }
+
+    /**
+     * @param bool $debug
+     *
+     * @return bool
+     */
+    public function isEnabled(bool $debug): bool
+    {
+        return true;
     }
 
     /**
