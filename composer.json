@@ -23,5 +23,8 @@
     "prefer-stable": true,
     "config": {
         "sort-packages": true
+    },
+    "require-dev": {
+        "doctrine/orm": "^2.6"
     }
 }

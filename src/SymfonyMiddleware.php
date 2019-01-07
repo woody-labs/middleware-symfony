@@ -68,11 +68,21 @@ class SymfonyMiddleware implements MiddlewareInterface
             $request->getBody()->getContents()
         );
 
-        $kernelGenerator = $this->kernelGenerator;
-        $kernel = $kernelGenerator();
+        $kernel = call_user_func($this->kernelGenerator);
 
         /** @var \Symfony\Component\HttpFoundation\Response $symfonyResponse */
         $symfonyResponse = $kernel->handle($symfonyRequest);
+
+        // Doctrine.
+        if ($kernel->getContainer()->has('doctrine.orm.entity_manager')) {
+            /** @var \Doctrine\ORM\EntityManagerInterface $entityManager */
+            $entityManager = $kernel->getContainer()->get('doctrine.orm.entity_manager');
+
+            $entityManager->clear();
+            $entityManager->close();
+            $entityManager->getConnection()->close();
+        }
+
         $kernel->terminate($symfonyRequest, $symfonyResponse);
         unset($kernel);
 
