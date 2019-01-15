@@ -1,6 +1,6 @@
 {
     "name": "woody/middleware-symfony",
-    "description": "",
+    "description": "Middleware PSR-15 compliant which dispatch request to Symfony 4.x",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -11,8 +11,14 @@
     ],
     "require": {
         "php": "^7.1",
-        "symfony/http-foundation": "^4.0",
+        "symfony/http-kernel": "^4.0",
         "woody/http-server-middleware": "dev-master"
+    },
+    "require-dev": {
+        "doctrine/orm": "^2.6"
+    },
+    "suggest": {
+        "doctrine/orm": "Support Doctrine ORM"
     },
     "autoload": {
         "psr-4": {
@@ -23,8 +29,5 @@
     "prefer-stable": true,
     "config": {
         "sort-packages": true
-    },
-    "require-dev": {
-        "doctrine/orm": "^2.6"
     }
 }

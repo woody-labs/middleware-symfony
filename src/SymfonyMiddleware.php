@@ -2,11 +2,12 @@
 
 namespace Woody\Middleware\Symfony;
 
-use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Woody\Http\Message\Response;
 use Woody\Http\Server\Middleware\MiddlewareInterface;
 
 /**
@@ -29,6 +30,7 @@ class SymfonyMiddleware implements MiddlewareInterface
      */
     public function __construct(callable $kernelGenerator = null)
     {
+        // Autodetect default Kernel in Symfony 4.x
         if (is_null($kernelGenerator) && class_exists('\App\Kernel')) {
             $kernelGenerator = function() {
                 return new \App\Kernel($_SERVER['APP_ENV'], $_SERVER['APP_DEBUG']);
@@ -55,44 +57,57 @@ class SymfonyMiddleware implements MiddlewareInterface
      * @param \Psr\Http\Server\RequestHandlerInterface $handler
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Throwable
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $symfonyRequest = Request::create(
-            $request->getUri(),
-            $request->getMethod(),
-            [],
-            $request->getCookieParams(),
-            $request->getUploadedFiles(),
-            $request->getServerParams(),
-            $request->getBody()->getContents()
-        );
+        try {
+            $symfonyRequest = Request::create(
+                $request->getUri(),
+                $request->getMethod(),
+                [],
+                $request->getCookieParams(),
+                $request->getUploadedFiles(),
+                $request->getServerParams(),
+                $request->getBody()->getContents()
+            );
 
-        $kernel = call_user_func($this->kernelGenerator);
+            $kernel = call_user_func($this->kernelGenerator);
 
-        /** @var \Symfony\Component\HttpFoundation\Response $symfonyResponse */
-        $symfonyResponse = $kernel->handle($symfonyRequest);
+            /** @var \Symfony\Component\HttpFoundation\Response $symfonyResponse */
+            $symfonyResponse = $kernel->handle($symfonyRequest);
 
-        // Doctrine.
-        if ($kernel->getContainer()->has('doctrine.orm.entity_manager')) {
-            /** @var \Doctrine\ORM\EntityManagerInterface $entityManager */
-            $entityManager = $kernel->getContainer()->get('doctrine.orm.entity_manager');
+            // Doctrine.
+            if ($kernel->getContainer()->has('doctrine.orm.entity_manager')) {
+                /** @var \Doctrine\ORM\EntityManagerInterface $entityManager */
+                $entityManager = $kernel->getContainer()->get('doctrine.orm.entity_manager');
 
-            $entityManager->clear();
-            $entityManager->close();
-            $entityManager->getConnection()->close();
+                $entityManager->clear();
+                $entityManager->close();
+                $entityManager->getConnection()->close();
+            }
+
+            $kernel->terminate($symfonyRequest, $symfonyResponse);
+            unset($kernel);
+
+            $response = new Response(
+                $symfonyResponse->getStatusCode(),
+                $symfonyResponse->headers->all(),
+                $symfonyResponse->getContent(),
+                $symfonyResponse->getProtocolVersion()
+            );
+
+            return $response;
+        } catch(HttpException $e ) {
+            throw new \Woody\Http\Message\Exception\HttpException(
+                $e->getStatusCode(),
+                $e->getMessage(),
+                $e->getPrevious(),
+                $e->getHeaders(),
+                $e->getCode()
+            );
+        } catch(\Throwable $t) {
+            throw $t;
         }
-
-        $kernel->terminate($symfonyRequest, $symfonyResponse);
-        unset($kernel);
-
-        $response = new Response(
-            $symfonyResponse->getStatusCode(),
-            $symfonyResponse->headers->all(),
-            $symfonyResponse->getContent(),
-            $symfonyResponse->getProtocolVersion()
-        );
-
-        return $response;
     }
 }
